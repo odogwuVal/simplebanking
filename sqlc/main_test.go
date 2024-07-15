@@ -18,9 +18,11 @@ var testQueries *Queries
 var testDB *sql.DB
 
 func TestMain(m *testing.M) {
-	testDB, err := sql.Open(dbDriver, dbSource)
+	var err error
+
+	testDB, err = sql.Open(dbDriver, dbSource)
 	if err != nil {
-		log.Fatal("Cannot connect to db")
+		log.Fatal("Cannot connect to db:", err)
 	}
 	testQueries = New(testDB)
 

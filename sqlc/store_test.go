@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -13,8 +12,6 @@ func TestTransferTX(t *testing.T) {
 
 	from_account := CreateRandomAccount(t)
 	to_account := CreateRandomAccount(t)
-
-	fmt.Println(">> before:", from_account.Balance, to_account.Balance)
 
 	// run n concurrent transfer transactions
 	n := 5
@@ -44,9 +41,9 @@ func TestTransferTX(t *testing.T) {
 		// validate transfer
 		transfer := result.Transfer
 		require.NotEmpty(t, transfer)
-		require.Equal(t, transfer.FromAccountID, from_account.ID)
-		require.Equal(t, transfer.ToAccountID, to_account.ID)
-		require.Equal(t, transfer.Amount, amount)
+		require.Equal(t, from_account.ID, transfer.FromAccountID)
+		require.Equal(t, to_account.ID, transfer.ToAccountID)
+		require.Equal(t, amount, transfer.Amount)
 		require.NotZero(t, transfer.ID)
 		require.NotZero(t, transfer.CreatedAt)
 
@@ -56,8 +53,8 @@ func TestTransferTX(t *testing.T) {
 		// validate entries
 		fromEntry := result.FromEntry
 		require.NotEmpty(t, fromEntry)
-		require.Equal(t, fromEntry.Amount, -amount)
-		require.Equal(t, fromEntry.AccountID, from_account.ID)
+		require.Equal(t, -amount, fromEntry.Amount)
+		require.Equal(t, from_account.ID, fromEntry.AccountID)
 		require.NotZero(t, fromEntry.ID)
 		require.NotZero(t, fromEntry.CreatedAt)
 
@@ -66,8 +63,8 @@ func TestTransferTX(t *testing.T) {
 
 		toEntry := result.ToEntry
 		require.NotEmpty(t, toEntry)
-		require.Equal(t, toEntry.Amount, -amount)
-		require.Equal(t, toEntry.AccountID, to_account.ID)
+		require.Equal(t, amount, toEntry.Amount)
+		require.Equal(t, to_account.ID, toEntry.AccountID)
 		require.NotZero(t, toEntry.ID)
 		require.NotZero(t, toEntry.CreatedAt)
 

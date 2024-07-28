@@ -13,6 +13,7 @@ sql:
             out: "sqlc"
             sql_package: "database/sql"
             emit_empty_slices: true
+            emit_interface: true
 overrides:
     go: null
 plugins: []

@@ -6,7 +6,7 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/odogwuVal/simplebanking/api"
-	db "github.com/odogwuVal/simplebanking/sqlc"
+	db "github.com/odogwuVal/simplebanking/db/sqlc"
 	"github.com/odogwuVal/simplebanking/util"
 )
 
@@ -22,7 +22,7 @@ func main() {
 	}
 
 	store := db.NewStore(conn)
-	server := api.NewServer(*store)
+	server := api.NewServer(store)
 
 	err = server.Start(config.Address)
 	if err != nil {

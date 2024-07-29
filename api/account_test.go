@@ -1,7 +1,10 @@
 package api
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,23 +18,48 @@ import (
 
 func TestGetAccountAPI(t *testing.T) {
 	acct := randomAccount()
-	controller := gomock.NewController(t)
-	defer controller.Finish()
 
-	store := mockdb.NewMockStore(controller)
-	store.EXPECT().GetAccount(gomock.Any(), gomock.Eq(acct.ID)).Times(1).Return(acct, nil)
+	testCases := []struct {
+		name          string
+		accountID     int64
+		buildStubs    func(store *mockdb.MockStore)
+		checkResponse func(t *testing.T, recoder *httptest.ResponseRecorder)
+	}{
+		{
+			name:      "OK",
+			accountID: acct.ID,
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetAccount(gomock.Any(), gomock.Eq(acct.ID)).Times(1).Return(acct, nil)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchAccount(t, recorder.Body, acct)
+			},
+		},
+	}
 
-	server := NewServer(store)
-	recorder := httptest.NewRecorder()
+	for i := range testCases {
+		tc := testCases[i]
 
-	url := fmt.Sprintf("/account/%d", acct.ID)
-	request, err := http.NewRequest(http.MethodGet, url, nil)
-	require.NoError(t, err)
+		t.Run(tc.name, func(t *testing.T) {
+			controller := gomock.NewController(t)
+			defer controller.Finish()
 
-	server.router.ServeHTTP(recorder, request)
-	// check response
-	require.Equal(t, http.StatusOK, recorder.Code)
+			store := mockdb.NewMockStore(controller)
+			tc.buildStubs(store)
 
+			server := NewServer(store)
+			recorder := httptest.NewRecorder()
+
+			url := fmt.Sprintf("/account/%d", acct.ID)
+			request, err := http.NewRequest(http.MethodGet, url, nil)
+			require.NoError(t, err)
+
+			server.router.ServeHTTP(recorder, request)
+			// check response
+			tc.checkResponse(t, recorder)
+		})
+	}
 }
 
 func randomAccount() db.Account {
@@ -42,4 +70,14 @@ func randomAccount() db.Account {
 		Currency: util.RandomCurrency(),
 	}
 
+}
+
+func requireBodyMatchAccount(t *testing.T, body *bytes.Buffer, account db.Account) {
+	data, err := ioutil.ReadAll(body)
+	require.NoError(t, err)
+
+	var gotaccount db.Account
+	err = json.Unmarshal(data, &gotaccount)
+	require.NoError(t, err)
+	require.Equal(t, account, gotaccount)
 }
